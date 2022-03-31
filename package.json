@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "NODE_ENV=test jest  ./__tests__/ --forceExit ",
-    "start": "nodemon --exec babel-node --presets=@babel/preset-env -- ./app.js"
+    "test": "NODE_ENV=test jest  ./__tests__/index.test.js --forceExit",
+    "start": "NODE_ENV=dev nodemon --exec babel-node --presets=@babel/preset-env -- ./app.js"
   },
   "keywords": [],
   "author": "",

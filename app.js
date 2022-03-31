@@ -11,7 +11,7 @@ const SERVER_PORT = process.env.PORT || 3001;
 
 var app = express();
 app.use(xss());
-app.use(morgan("tiny"));
+if (process.env.NODE_ENV === "dev") app.use(morgan("tiny"));
 app.use(express.json());
 app.use(express.urlencoded());
 app.use(helmet());

@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import configs from "../configs";
-
+import { BUYER_ROLE, SELLER_ROLE } from "../utilis/constants";
 export async function verifyTokenMiddleware(req, res, next) {
   // Get auth header value
   const token = req.headers["authorization"];
@@ -32,3 +32,13 @@ export async function verifyTokenValid(token) {
     return { success: false };
   }
 }
+export const requireSeller = (req, res, next) => {
+  const user = req.user;
+  if (user.role === SELLER_ROLE) return next();
+  res.status(401).send({ err: "wrong role" });
+};
+export const requireBuyer = (req, res, next) => {
+  const user = req.user;
+  if (user.role === BUYER_ROLE) return next();
+  res.status(401).send({ err: "wrong role" });
+};
