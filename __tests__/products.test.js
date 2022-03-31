@@ -1,4 +1,5 @@
-import { getToken } from "./index.test";
+import { getChange } from "../controllers/products";
+import { getToken, p1Id, p2Id } from "./index.test";
 import {
   seller1Credentials,
   seller2Credentials,
@@ -383,6 +384,142 @@ export const productsTest = (request, app) => {
         .set("authorization", token);
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty("id", _id);
+    });
+  });
+
+  describe("buy", () => {
+    const setDeposit = async (value, token) => {
+      await request(app)
+        .post("/api/user/deposit")
+        .set("authorization", token)
+        .send({ deposit: value });
+    };
+    const makeRequest = async (token, payload) => {
+      const res = await request(app)
+        .post("/api/product/buy")
+        .set("authorization", token)
+        .send(payload);
+      return res;
+    };
+    const getBuyerToken = async () => {
+      const token = await getToken(
+        buyerCredentials.username,
+        buyerCredentials.password
+      );
+      return token;
+    };
+
+    it("buy with 0 quantity --> 400", async () => {
+      const token = await getBuyerToken();
+      const payload = {
+        productId: p1Id,
+        quantity: 0,
+      };
+      const res = await makeRequest(token, payload);
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.err).toBe("quantity must be > 0");
+    });
+    it("buy with float quantity --> 400", async () => {
+      const token = await getBuyerToken();
+      const payload = {
+        productId: p1Id,
+        quantity: 1.5,
+      };
+      const res = await makeRequest(token, payload);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.err).toBe("quantity must be a whole number");
+    });
+    it("buy with quantity > amountAvaliable --> 400", async () => {
+      const token = await getBuyerToken();
+      const payload = {
+        productId: p1Id,
+        quantity: 100,
+      };
+      const res = await makeRequest(token, payload);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.err).toBe("no enough products to satisfy this amount");
+    });
+    it("buy with an imaginary product --> 404", async () => {
+      const token = await getBuyerToken();
+      const payload = {
+        productId: "123124",
+        quantity: 1,
+      };
+      const res = await makeRequest(token, payload);
+      expect(res.statusCode).toBe(404);
+      expect(res.body.err).toBe("product not found");
+    });
+    it("buy with no productId --> 400", async () => {
+      const token = await getBuyerToken();
+      const payload = {
+        quantity: 1,
+      };
+      const res = await makeRequest(token, payload);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.err).toBe("missing parameter");
+    });
+    it("products cost more than deposit --> 400 ", async () => {
+      const token = await getBuyerToken();
+      await setDeposit(10, token);
+      const payload = {
+        productId: p1Id,
+        quantity: 10,
+      };
+      const res = await makeRequest(token, payload);
+      expect(res.statusCode).toBe(400);
+      expect(res.body.err).toBe("not enough deposit");
+    });
+    it("buy a single product successfuly --> 200", async () => {
+      const token = await getBuyerToken();
+      const payload = {
+        productId: p1Id,
+        quantity: 1,
+      };
+      await setDeposit(25, token);
+      const res = await makeRequest(token, payload);
+      const p1IdPrice = 5;
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty("products", p1Id);
+      expect(res.body).toHaveProperty("total", payload.quantity * p1IdPrice);
+      expect(res.body).toHaveProperty("change");
+    });
+  });
+
+  describe("get difference", () => {
+    it("difference 5", () => {
+      const difference = 5;
+      const change = getChange(difference);
+      expect(change).toContain(5);
+    });
+    it("difference 10", () => {
+      const difference = 10;
+      const change = getChange(difference);
+      expect(change).toContain(10);
+    });
+    it("difference 15", () => {
+      const difference = 15;
+      const change = getChange(difference);
+      expect(change).toContain(10);
+      expect(change).toContain(5);
+    });
+    it("difference 25", () => {
+      const difference = 25;
+      const change = getChange(difference);
+      expect(change).toContain(20);
+      expect(change).toContain(5);
+    });
+    it("difference 35", () => {
+      const difference = 35;
+      const change = getChange(difference);
+      expect(change).toContain(20);
+      expect(change).toContain(10);
+      expect(change).toContain(5);
+    });
+    it("difference 22", () => {
+      const difference = 22;
+      const change = getChange(difference);
+      expect(change).toContain(20);
     });
   });
 };

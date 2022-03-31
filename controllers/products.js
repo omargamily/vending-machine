@@ -1,4 +1,5 @@
 import Product from "../models/products";
+import { ALLOWED_COINS } from "../utilis/constants";
 
 export const createProduct = async (req, res, next) => {
   try {
@@ -89,15 +90,55 @@ export const getProduct = (req, res, next) => {
     .catch((err) => next({ status: 500, message: error.message }));
 };
 
-export const buy = (req, res, next) => {
+export const buy = async (req, res, next) => {
   try {
     // get product id and quantity from body
+    const { productId, quantity } = req.body;
+    const user = req.user;
+    if (!productId || quantity === undefined || quantity === null)
+      return next({ status: 400, message: "missing parameter" });
+    if (productId.length < 24)
+      return next({ status: 404, message: "product not found" });
+
+    const product = await Product.findById(productId).then((result) =>
+      result?._doc ? result._doc : result
+    );
+    if (!product) return next({ status: 404, message: "product not found" });
+
     // validate quantity > 0 & q < p.amount
-    // check if pid is found
-    // check if user got money deposit >= price
-    // calculate change
-    // send products purchased ,total spent, change for user
+    if (quantity === 0)
+      return next({ status: 400, message: "quantity must be > 0" });
+    if (quantity > product.amountAvaliable)
+      return next({
+        status: 400,
+        message: "no enough products to satisfy this amount",
+      });
+    if (quantity % 1 !== 0)
+      return next({
+        status: 400,
+        message: "quantity must be a whole number",
+      });
+    const totalCost = product.cost * quantity;
+    if (totalCost > user.deposit)
+      return next({ status: 400, message: "not enough deposit" });
+
+    const difference = user.deposit - totalCost;
+    const change = getChange(difference);
+    res.status(200).send({ products: productId, total: totalCost, change });
   } catch (error) {
     next({ status: 500, message: error.message });
   }
+};
+export const getChange = (difference) => {
+  let change = [],
+    i = 0;
+  while (difference !== 0) {
+    if (i > ALLOWED_COINS.length) break;
+    if (ALLOWED_COINS[i] > difference) {
+      change.push(ALLOWED_COINS[i - 1]);
+      difference -= ALLOWED_COINS[i - 1];
+      i = 0;
+    } else i++;
+  }
+  return change;
 };

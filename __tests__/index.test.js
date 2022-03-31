@@ -19,6 +19,9 @@ export const seller2Credentials = {
   password: "123456789",
 };
 
+export const p1Id = "62462a637cfb089f20eaee77";
+export const p2Id = "62462a637cfb089f20eaee76";
+
 export const getToken = async (username, password) => {
   const singinRes = await request(app)
     .post("/api/user/signin")
