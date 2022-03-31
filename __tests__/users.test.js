@@ -176,4 +176,30 @@ export const usersTest = (request, app) => {
       expect(res.body).toHaveProperty("deposit");
     });
   });
+  describe("reset", () => {
+    it("reset deposit using seller -> 401", async () => {
+      const token = await getToken(
+        seller1Credentials.username,
+        seller1Credentials.password
+      );
+      const res = await request(app)
+        .get("/api/user/reset")
+        .set("authorization", token);
+      expect(res.statusCode).toBe(401);
+      expect(res.body.err).toBe("wrong role");
+    });
+    it("reset user deposit -> 200", async () => {
+      const token = await getToken(
+        buyerCredentials.username,
+        buyerCredentials.password
+      );
+      const res = await request(app)
+        .get("/api/user/reset")
+        .set("authorization", token);
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toHaveProperty("username", buyerCredentials.username);
+      expect(res.body).toHaveProperty("role", "buyer");
+      expect(res.body).toHaveProperty("deposit");
+    });
+  });
 };

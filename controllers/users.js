@@ -77,9 +77,16 @@ export const deposit = async (req, res, next) => {
   }
 };
 
-export const reset = (req, res, next) => {
+export const reset = async (req, res, next) => {
   try {
     // reset user deposit
+    const user = req.user;
+    let { password, ...rest } = await User.findOneAndUpdate(
+      { username: user.username },
+      { deposit: 0 },
+      { new: true }
+    ).then((result) => (result?._doc ? result._doc : result));
+    res.status(200).send(rest);
   } catch (error) {
     next({ status: 500, message: error.message });
   }
