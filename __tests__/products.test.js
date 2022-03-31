@@ -154,7 +154,6 @@ export const productsTest = (request, app) => {
         .put("/api/product/")
         .set("authorization", token)
         .send(payload);
-      console.log(res.body);
       expect(res.statusCode).toBe(401);
       expect(res.body.err).toBe("unauthorized");
     });

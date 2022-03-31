@@ -1,6 +1,6 @@
 import req from "express/lib/request";
 import { BUYER_ROLE } from "../utilis/constants";
-import { getToken, buyerCredentials } from "./index.test";
+import { getToken, buyerCredentials, seller1Credentials } from "./index.test";
 
 export const usersTest = (request, app) => {
   describe("create user", () => {
@@ -136,8 +136,8 @@ export const usersTest = (request, app) => {
   describe("deposit", () => {
     it("deposit with seller credentials", async () => {
       const token = await getToken(
-        buyerCredentials.username,
-        buyerCredentials.password
+        seller1Credentials.username,
+        seller1Credentials.password
       );
       const payload = { deposit: 5 };
       const res = await request(app)
@@ -145,7 +145,7 @@ export const usersTest = (request, app) => {
         .set("authorization", token)
         .send(payload);
       expect(res.statusCode).toBe(401);
-      expect(res.body.err).toBe("only buyers can deposit");
+      expect(res.body.err).toBe("wrong role");
     });
     it("deposit with invalid coin value --> 400", async () => {
       const token = await getToken(
@@ -171,7 +171,9 @@ export const usersTest = (request, app) => {
         .set("authorization", token)
         .send(payload);
       expect(res.statusCode).toBe(200);
-      expect(res.body.deposit).toBeInstanceOf(Number);
+      expect(res.body).toHaveProperty("username", buyerCredentials.username);
+      expect(res.body).toHaveProperty("role", "buyer");
+      expect(res.body).toHaveProperty("deposit");
     });
   });
 };

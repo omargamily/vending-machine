@@ -2,6 +2,7 @@ import User from "../models/user";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import configs from "../configs";
+import { ALLOWED_COINS } from "../utilis/constants";
 
 export const createUser = async (req, res, next) => {
   try {
@@ -55,9 +56,22 @@ export const getUser = (req, res, next) => {
   }
 };
 
-export const deposit = (req, res, next) => {
+export const deposit = async (req, res, next) => {
   try {
     // validate value is in [5,10,20,50,100]
+    const { deposit } = req.body;
+    let user = req.user;
+    if (!ALLOWED_COINS.includes(deposit))
+      return next({
+        status: 400,
+        message: "only 5,10,20,50,100 cents coins are accepted",
+      });
+    let { password, ...rest } = await User.findOneAndUpdate(
+      { username: user.username },
+      { $inc: { deposit } },
+      { new: true }
+    ).then((result) => (result?._doc ? result._doc : result));
+    res.status(200).send(rest);
   } catch (error) {
     next({ status: 500, message: error.message });
   }
